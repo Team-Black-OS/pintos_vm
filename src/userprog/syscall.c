@@ -162,6 +162,19 @@ syscall_handler (struct intr_frame *f)
       s_close(*fd);
       break;
     }
+    case SYS_MMAP: {
+      int* fd = (int*) ((char*)f->esp + 4);
+      void** addr = (void**) ((char*)f->esp + 8);
+      validate(addr);
+      validate(*addr);
+      validate(fd);
+      
+      break;
+    }
+    case SYS_MUNMAP: {
+
+      break;
+    }
     default: {
       break;
     }
