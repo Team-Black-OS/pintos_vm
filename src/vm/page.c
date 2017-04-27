@@ -17,7 +17,17 @@ bool page_less(const struct hash_elem *a, const struct hash_elem *b, void* aux){
     return (first->addr < second->addr);
 }
 
-void* get_user_page(enum palloc_flags flags){
+// Function to get a user page of memory.
+struct page* get_user_page(){
     struct page* p = malloc(sizeof(struct page));
     struct thread* t = thread_current();
+
+    struct hash_elem* h_elem = hash_insert(t->page_table,&p->hash_elem);
+    // This page already exists in the table.
+    if(h_elem != NULL){
+        free(p);
+        return hash_entry(h_elem,struct page,hash_elem);
+    }else{
+        
+    }
 }
