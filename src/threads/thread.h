@@ -5,6 +5,8 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/synch.h"
+#include "vm/page.h"
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -105,11 +107,21 @@ struct thread
   END ADDED IN P2
   */
 
+
+  /* 
+  ADDED IN P3
+  */
+    void* user_esp;                     /* Holds the user virtual stack pointer. */
+    struct hash* page_table;            /* Holds the pages for this process. */
+  /*
+  END ADDED IN P3
+  */
+
+
     struct list_elem allelem;           /* List element for all threads list. */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-    void* user_esp;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
