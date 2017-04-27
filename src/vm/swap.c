@@ -9,3 +9,5 @@ static struct block* global_swap;
 static struct bitmap global_bitmap;
 static struct lock swap_lock;
 
+
+

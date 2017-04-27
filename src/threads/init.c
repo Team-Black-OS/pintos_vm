@@ -22,6 +22,7 @@
 #include "threads/palloc.h"
 #include "threads/pte.h"
 #include "threads/thread.h"
+#include "vm/frame.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -126,7 +127,8 @@ main (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
-
+  // Put initialization for user memory here.
+ // init_user_mem();
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */

@@ -11,4 +11,6 @@ struct frame{
     struct page *page;
 };
 
+void init_user_mem(void);
+struct frame get_free_frame(void);
 #endif

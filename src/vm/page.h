@@ -34,4 +34,5 @@ unsigned page_hash(const struct hash_elem *e, void* aux);
 // Comparison function for pages.
 bool page_less(const struct hash_elem *a, const struct hash_elem *b, void* aux);
 
+void* get_user_page();
 #endif
