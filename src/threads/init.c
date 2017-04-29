@@ -128,7 +128,7 @@ main (void)
   filesys_init (format_filesys);
 #endif
   // Put initialization for user memory here.
- // init_user_mem();
+  //init_user_mem();
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */
