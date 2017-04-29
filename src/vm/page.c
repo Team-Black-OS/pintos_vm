@@ -22,9 +22,9 @@ bool page_less(const struct hash_elem *a, const struct hash_elem *b, void* aux){
 // Note: Doesn't allocate the struct frame yet. This is handled in page_in().
 struct page* page_allocate(void* addr){
     struct page* p = malloc(sizeof(struct page));
-    struct thread* t = thread_current();
+    p->thread = thread_current();
     p->addr = pg_round_down(addr);
-    struct hash_elem* h_elem = hash_insert(t->page_table,&p->hash_elem);
+    struct hash_elem* h_elem = hash_insert(p->thread->page_table,&p->hash_elem);
     // This page already exists in the table.
     if(h_elem != NULL){
         // free the existing structure.
@@ -47,7 +47,7 @@ bool page_in(void* addr){
     // Set p to the address we were given above.
     p.addr = pg_round_down(addr);
     struct hash_elem* h_elem = hash_find(t->page_table,&p.hash_elem);
-    if(!h_elem){
+    if(h_elem != NULL){
         // Pointer to the new page.
         struct page* pg = hash_entry(h_elem,struct page,hash_elem);
         // Create a new zeroed page.
@@ -57,6 +57,7 @@ bool page_in(void* addr){
             memset(pg->frame->base,0,PGSIZE);
             lock_release(&pg->frame->f_lock);
         }
+        pagedir_set_page(pg->thread->pagedir,pg->addr,pg->frame->base,true);
     }
 
 }
