@@ -527,17 +527,21 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       //uint8_t *kpage = palloc_get_page (PAL_USER);
 
       struct page* p = page_allocate(upage);
-      if (p == NULL)
-        return false;
 
+      p->file = file;
+      p->file_offset = ofs;
+      p->file_bytes = page_read_bytes;
+     /* if (p == NULL)
+        return false;
+*/
       /* Load this page. */
-      if (file_read (file, upage, page_read_bytes) != (int) page_read_bytes)
+     /* if (file_read (file, upage, page_read_bytes) != (int) page_read_bytes)
         {
           //palloc_free_page (kpage);
           return false; 
         }
       memset (upage + page_read_bytes, 0, page_zero_bytes);
-
+*/
       /* Add the page to the process's address space. */
      /* if (!install_page (upage, kpage, writable)) 
         {

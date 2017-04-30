@@ -39,5 +39,9 @@ struct page* page_allocate(void* addr);
 
 bool page_in(void* addr);
 
-bool page_in_core(struct page* in_page);
+bool page_in_core(struct page* page);
+
+void lock_page(struct page* page);
+
+void unlock_page(struct page* page);
 #endif
