@@ -7,6 +7,7 @@
 #include "userprog/pagedir.h"
 #include <string.h>
 
+
 unsigned page_hash(const struct hash_elem *e, void* aux) {
     struct page* pg = hash_entry(e,struct page,hash_elem);
     return ((int) pg->addr >> PGBITS);
@@ -66,7 +67,7 @@ bool page_in_core(struct page* page){
     if(page->file == NULL && page->sector == NULL && page->frame == NULL){
         page->frame = get_free_frame();
         lock_acquire(&page->frame->f_lock);
-        memset(page->frame->base,0,PGSIZE);
+
         page->frame->page = page;
         lock_release(&page->frame->f_lock);
         }

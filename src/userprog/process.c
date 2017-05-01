@@ -20,6 +20,10 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
+
+// Cap stack growth at 64 pages.
+#define STACK_MAX_PAGES 64
+
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -567,15 +571,22 @@ setup_stack (void **esp, char* in_args)
   bool success = false;
   int index = 0;
   const int WORD_LIMIT = 50;
+  uint8_t* first_stack_page = ((uint8_t *) PHYS_BASE) - PGSIZE;
   //kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  struct page* p = page_allocate(((uint8_t *) PHYS_BASE) - PGSIZE);
+
+  // Allocate the first stack page.
+  struct page* p = page_allocate(first_stack_page);
+
+  // Allocate the rest of the stack pages (The other 64)
+  for(int i = 0; i < STACK_MAX_PAGES; ++i){
+    page_allocate(first_stack_page - (PGSIZE * i));
+  }
   if (p != NULL) 
     {
       //success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      success = page_in(((uint8_t *) PHYS_BASE) - PGSIZE);
+      success = page_in(first_stack_page);
       if (success){
         // Parsing arguments:
-
         char* current, *buffer;
         char *current_arg[WORD_LIMIT];
 
