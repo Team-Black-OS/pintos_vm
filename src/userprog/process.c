@@ -20,6 +20,10 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
+
+// Cap stack growth at 64 pages.
+#define STACK_MAX_PAGES 64
+
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -513,8 +517,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
-
-  file_seek (file, ofs);
+  size_t total_read_bytes = ofs;
+  //file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
       /* Calculate how to fill this page.
@@ -524,26 +528,33 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
+      //uint8_t *kpage = palloc_get_page (PAL_USER);
+
+      struct page* p = page_allocate(upage);
+
+      p->file = file;
+      p->file_offset = total_read_bytes;
+      p->file_bytes = page_read_bytes;
+     /* if (p == NULL)
         return false;
-
+*/
       /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+     /* if (file_read (file, upage, page_read_bytes) != (int) page_read_bytes)
         {
-          palloc_free_page (kpage);
+          //palloc_free_page (kpage);
           return false; 
         }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
+      memset (upage + page_read_bytes, 0, page_zero_bytes);
+*/
       /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable)) 
+     /* if (!install_page (upage, kpage, writable)) 
         {
           palloc_free_page (kpage);
           return false; 
         }
-
+*/
       /* Advance. */
+      total_read_bytes += PGSIZE;
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -556,17 +567,26 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, char* in_args) 
 {
-  uint8_t *kpage;
+ // uint8_t *kpage;
   bool success = false;
   int index = 0;
   const int WORD_LIMIT = 50;
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if (kpage != NULL) 
+  uint8_t* first_stack_page = ((uint8_t *) PHYS_BASE) - PGSIZE;
+  //kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+
+  // Allocate the first stack page.
+  struct page* p = page_allocate(first_stack_page);
+
+  // Allocate the rest of the stack pages (The other 64)
+  for(int i = 0; i < STACK_MAX_PAGES; ++i){
+    page_allocate(first_stack_page - (PGSIZE * i));
+  }
+  if (p != NULL) 
     {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+      //success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+      success = page_in(first_stack_page);
       if (success){
         // Parsing arguments:
-
         char* current, *buffer;
         char *current_arg[WORD_LIMIT];
 
@@ -628,8 +648,8 @@ setup_stack (void **esp, char* in_args)
         //*esp -= 4;
         //printf("esp =%x\n",*esp);
       }
-      else
-        palloc_free_page (kpage);
+      //else
+       // palloc_free_page (kpage);
     }
   return success;
 }
