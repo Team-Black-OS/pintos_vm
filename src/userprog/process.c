@@ -513,8 +513,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
-
-  file_seek (file, ofs);
+  size_t total_read_bytes = ofs;
+  //file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
       /* Calculate how to fill this page.
@@ -529,7 +529,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       struct page* p = page_allocate(upage);
 
       p->file = file;
-      p->file_offset = ofs;
+      p->file_offset = total_read_bytes;
       p->file_bytes = page_read_bytes;
      /* if (p == NULL)
         return false;
@@ -550,6 +550,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         }
 */
       /* Advance. */
+      total_read_bytes += PGSIZE;
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -562,7 +563,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, char* in_args) 
 {
-  uint8_t *kpage;
+ // uint8_t *kpage;
   bool success = false;
   int index = 0;
   const int WORD_LIMIT = 50;
@@ -636,8 +637,8 @@ setup_stack (void **esp, char* in_args)
         //*esp -= 4;
         //printf("esp =%x\n",*esp);
       }
-      else
-        palloc_free_page (kpage);
+      //else
+       // palloc_free_page (kpage);
     }
   return success;
 }

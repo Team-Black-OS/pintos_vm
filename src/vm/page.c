@@ -71,7 +71,7 @@ bool page_in_core(struct page* page){
         lock_release(&page->frame->f_lock);
         }
     else if(page->file != NULL){
-            //file_open(page->file);
+            //file_reopen(page->file);
             page->frame = get_free_frame();
             page->frame->page = page;
             if(page->frame != NULL){
@@ -79,6 +79,7 @@ bool page_in_core(struct page* page){
                 file_read(page->file,page->frame->base,page->file_bytes);
                 memset(page->frame->base + page->file_bytes, 0, PGSIZE - page->file_bytes);
             }
+            //file_close(page->file);
         }
     else if(page->sector != NULL){
 
