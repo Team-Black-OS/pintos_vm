@@ -22,7 +22,7 @@ bool page_less(const struct hash_elem *a, const struct hash_elem *b, void* aux){
 
 // Allocates a page of memory that contains the address void* addr.
 // Note: Doesn't allocate the struct frame yet. This is handled in page_in().
-struct page* page_allocate(void* addr){
+struct page* page_allocate(void* addr, bool writable){
     struct page* p = malloc(sizeof(struct page));
     p->thread = thread_current();
     p->addr = pg_round_down(addr);
@@ -38,6 +38,7 @@ struct page* page_allocate(void* addr){
         p->file = NULL;
         p->frame = NULL;
         p->sector = NULL;
+        p->private = !writable;
         return p;
     }
 }
@@ -55,7 +56,7 @@ bool page_in(void* addr){
         // Create a new zeroed page.
         lock_page(pg);
         if(page_in_core(pg)){
-            pagedir_set_page(pg->thread->pagedir,pg->addr,pg->frame->base,true);
+            pagedir_set_page(pg->thread->pagedir,pg->addr,pg->frame->base,!pg->private);
         }
         unlock_page(pg);
 

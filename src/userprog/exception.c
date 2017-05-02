@@ -5,7 +5,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-
+//#define DEBUG_PF
 /* Number of page faults processed. */
 static long long page_fault_cnt;
 
@@ -160,7 +160,7 @@ page_fault (struct intr_frame *f)
           write ? "writing" : "reading",
           user ? "user" : "kernel");
   #endif
-  if(fault_addr == NULL || !is_user_vaddr(fault_addr)){
+  if(fault_addr == NULL || !is_user_vaddr(fault_addr) || !not_present){
     kill (f);
   }else if(not_present && user){
     page_in(fault_addr);

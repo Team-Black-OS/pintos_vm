@@ -107,11 +107,17 @@ syscall_handler (struct intr_frame *f)
     case SYS_READ: {
       // Retrieve arguments and validate.
       int* fd = (int*) ((char*)f->esp +4);
-      char** raw = (char**) ((char*)f->esp+8);
-      unsigned* size = (unsigned*) ((char*)f->esp + 12);
       validate(fd);
-      validate(raw);
+
+      unsigned* size = (unsigned*) ((char*)f->esp + 12);
       validate(size);
+
+      char** raw = (char**) ((char*)f->esp+8);
+      validate(raw);
+      //validate(*raw);
+
+
+
       for(unsigned int i = 0; i < *size; ++i){
       validate(*raw+i);
       }
@@ -130,7 +136,7 @@ syscall_handler (struct intr_frame *f)
 
       char** raw = (char**) ((char*)f->esp+8);
       validate(raw);
-      validate(*raw);
+      //validate(*raw);
       for(unsigned int i = 0; i < *size; ++i){
         validate(*raw + i);
       }

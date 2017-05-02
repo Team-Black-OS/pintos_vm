@@ -100,8 +100,9 @@ start_process (void *in_data)
   // Add the structure to the parent thread's list.
   //list_push_front(&data->parent->children,&share->child_elem);
   // Thread current 
-  thread_current()->parent_share = share;
-
+  struct thread* t = thread_current();
+  t->parent_share = share;
+  t->user_esp = PHYS_BASE;
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -530,7 +531,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Get a page of memory. */
       //uint8_t *kpage = palloc_get_page (PAL_USER);
 
-      struct page* p = page_allocate(upage);
+      struct page* p = page_allocate(upage,writable);
 
       p->file = file;
       p->file_offset = total_read_bytes;
@@ -575,11 +576,11 @@ setup_stack (void **esp, char* in_args)
   //kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 
   // Allocate the first stack page.
-  struct page* p = page_allocate(first_stack_page);
+  struct page* p = page_allocate(first_stack_page,true);
 
   // Allocate the rest of the stack pages (The other 64)
   for(int i = 0; i < STACK_MAX_PAGES; ++i){
-    page_allocate(first_stack_page - (PGSIZE * i));
+    page_allocate(first_stack_page - (PGSIZE * i),true);
   }
   if (p != NULL) 
     {
