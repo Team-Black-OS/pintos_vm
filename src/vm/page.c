@@ -59,9 +59,9 @@ bool page_in(void* addr){
             pagedir_set_page(pg->thread->pagedir,pg->addr,pg->frame->base,!pg->private);
         }
         unlock_page(pg);
-
+        return true;
     }
-    return true;
+return false;
 }
 
 bool page_in_core(struct page* page){
@@ -99,5 +99,15 @@ void lock_page(struct page* page){
 void unlock_page(struct page* page){
     if(page->frame != NULL && lock_held_by_current_thread(&page->frame->f_lock)){
         lock_release(&page->frame->f_lock);
+    }
+}
+
+// Returns true if the current memory access is (most likely) a stack access.
+bool is_stack_access(void* addr, void* esp){
+    if(addr > esp){
+        return true;
+    }else{
+    uint32_t diff = (uint32_t)esp - (uint32_t)addr;
+    return diff < PGSIZE;
     }
 }

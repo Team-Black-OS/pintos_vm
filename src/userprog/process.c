@@ -528,32 +528,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      //uint8_t *kpage = palloc_get_page (PAL_USER);
-
       struct page* p = page_allocate(upage,writable);
 
       p->file = file;
       p->file_offset = total_read_bytes;
       p->file_bytes = page_read_bytes;
-     /* if (p == NULL)
-        return false;
-*/
-      /* Load this page. */
-     /* if (file_read (file, upage, page_read_bytes) != (int) page_read_bytes)
-        {
-          //palloc_free_page (kpage);
-          return false; 
-        }
-      memset (upage + page_read_bytes, 0, page_zero_bytes);
-*/
-      /* Add the page to the process's address space. */
-     /* if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-*/
+
       /* Advance. */
       total_read_bytes += PGSIZE;
       read_bytes -= page_read_bytes;
@@ -579,9 +559,9 @@ setup_stack (void **esp, char* in_args)
   struct page* p = page_allocate(first_stack_page,true);
 
   // Allocate the rest of the stack pages (The other 64)
-  for(int i = 0; i < STACK_MAX_PAGES; ++i){
-    page_allocate(first_stack_page - (PGSIZE * i),true);
-  }
+ // for(int i = 0; i < STACK_MAX_PAGES; ++i){
+ //   page_allocate(first_stack_page - (PGSIZE * i),true);
+ // }
   if (p != NULL) 
     {
       //success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);

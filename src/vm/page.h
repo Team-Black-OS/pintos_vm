@@ -44,4 +44,6 @@ bool page_in_core(struct page* page);
 void lock_page(struct page* page);
 
 void unlock_page(struct page* page);
+
+bool is_stack_access(void* addr,void* esp);
 #endif
