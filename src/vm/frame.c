@@ -11,11 +11,12 @@ static struct frame* frames[FRAME_ARR_SIZE];
 static struct lock scan_lock;
 static int hand;
 static int used_pages = 0;
-struct frame* get_free_frame(){
+struct frame* get_free_frame(struct page* page){
     lock_acquire(&scan_lock);
     struct thread* t = thread_current();
     for(int i = 0; i < used_pages; ++i){
         if(frames[i]->page == NULL){
+            frames[i]->page = page;
            lock_release(&scan_lock); 
            return frames[i];
         }

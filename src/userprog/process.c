@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-
+#include "syscall.h"
 static thread_func start_process NO_RETURN;
 
 // Cap stack growth at 64 pages.
@@ -327,7 +327,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-
+  lock_acquire(&file_lock);
   // New char* for first arg in file_name (The executable name).
   char *exec_name = malloc(strlen(file_name)+1);
   char* dummy_arg;
@@ -444,6 +444,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
  done:
   /* We arrive here whether the load is successful or not. */
   free(exec_name);
+  lock_release(&file_lock);
   //file_close (file);
   return success;
 }

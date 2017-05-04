@@ -14,8 +14,8 @@
 #include <string.h>
 #include "devices/shutdown.h"
 
+struct lock file_lock;
 static void syscall_handler (struct intr_frame *);
-static struct lock file_lock;
 void
 syscall_init (void) 
 {
@@ -401,8 +401,12 @@ int s_remove(char* name){
 
 void validate(void* addr){
   for(int i = 0; i < 4; ++i){
-    if(addr+i == NULL || !is_user_vaddr(addr+i) || pagedir_get_page(thread_current()->pagedir,addr+i) == NULL){
+    if(addr+i == NULL || !is_user_vaddr(addr+i)){
       exit(-1);
+    }else if(pagedir_get_page(thread_current()->pagedir,addr+i) == NULL){
+      if(!page_in(addr+i)){
+        exit(-1);
+      }
     }
   }
 }

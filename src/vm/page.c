@@ -6,7 +6,7 @@
 #include "threads/palloc.h"
 #include "userprog/pagedir.h"
 #include <string.h>
-
+#include "userprog/syscall.h"
 
 unsigned page_hash(const struct hash_elem *e, void* aux) {
     struct page* pg = hash_entry(e,struct page,hash_elem);
@@ -37,7 +37,7 @@ struct page* page_allocate(void* addr, bool writable){
         // Return the newly allocated page.
         p->file = NULL;
         p->frame = NULL;
-        p->sector = NULL;
+        p->sector = 0;
         p->private = !writable;
         return p;
     }
@@ -65,31 +65,23 @@ return false;
 }
 
 bool page_in_core(struct page* page){
-    if(page->file == NULL && page->sector == NULL && page->frame == NULL){
-        page->frame = get_free_frame();
-        lock_acquire(&page->frame->f_lock);
-
-        page->frame->page = page;
-        lock_release(&page->frame->f_lock);
+    if(page->file == NULL && page->sector == 0 && page->frame == NULL){
+        page->frame = get_free_frame(page);
+        return true;
         }
     else if(page->file != NULL){
-            //file_reopen(page->file);
-            page->frame = get_free_frame();
-            page->frame->page = page;
+            page->frame = get_free_frame(page);
             if(page->frame != NULL){
+                lock_acquire(&file_lock);
                 file_seek(page->file,page->file_offset);
                 file_read(page->file,page->frame->base,page->file_bytes);
                 memset(page->frame->base + page->file_bytes, 0, PGSIZE - page->file_bytes);
-            }
-            //file_close(page->file);
-        }
-    else if(page->sector != NULL){
+                lock_release(&file_lock);
+                return true;
 
+            }
         }
-    else if (page->frame != NULL){
-            
-        }
-    return true;
+        return false;
 }
 void lock_page(struct page* page){
     if(page->frame != NULL){
@@ -110,4 +102,13 @@ bool is_stack_access(void* addr, void* esp){
     uint32_t diff = (uint32_t)esp - (uint32_t)addr;
     return diff < PGSIZE;
     }
+}
+bool in_allocated_page(void* addr){
+    struct thread* t = thread_current();
+    // Temporary page structure.
+    struct page p;
+    // Set p to the address we were given above.
+    p.addr = pg_round_down(addr);
+    struct hash_elem* h_elem = hash_find(t->page_table,&p.hash_elem);
+    return (h_elem != NULL);
 }

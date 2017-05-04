@@ -162,9 +162,10 @@ page_fault (struct intr_frame *f)
   #endif
 
 
-  if(fault_addr == NULL || !is_user_vaddr(fault_addr) || !not_present || fault_addr < LOADER_KERN_BASE){
+  if(fault_addr == NULL || !is_user_vaddr(fault_addr) || !not_present){
     kill (f);
-  }else if(not_present && user){
+  }
+  else if(not_present && user){
     if(is_stack_access(fault_addr,f->esp)){
       page_allocate(fault_addr,true);
     }
