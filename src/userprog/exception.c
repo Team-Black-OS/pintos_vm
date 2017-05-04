@@ -161,17 +161,26 @@ page_fault (struct intr_frame *f)
           user ? "user" : "kernel");
   #endif
 
-
+  // If this address is bad, we exit immediately.
   if(fault_addr == NULL || !is_user_vaddr(fault_addr) || !not_present){
     kill (f);
   }
+
+  // Otherwise, check if this is a user page fault.
   else if(not_present && user){
+    // If it is a stack access, we must allocate the page for it.
     if(is_stack_access(fault_addr,f->esp)){
       page_allocate(fault_addr,true);
     }
+    // Attempt to page in the page. If this fails, kill the process.
     if(!page_in(fault_addr)){
       kill(f);
     }
+  }
+
+  // In all other cases, kill immediately.
+  else{
+    kill(f);
   }
 }
 

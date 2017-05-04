@@ -43,6 +43,8 @@ struct page* page_allocate(void* addr, bool writable){
     }
 }
 
+// Pages in a page of memory. (i.e. Searches this process' hash table to find the correct page to bring in,
+// then allocates the page and adds it to the process' page directory.)
 bool page_in(void* addr){
     struct thread* t = thread_current();
     // Temporary page structure.
@@ -64,30 +66,41 @@ bool page_in(void* addr){
 return false;
 }
 
+// The "core" page-in function referred to in the guidance. Accepts a struct page*, and performs the appropriate operation
+// based on the status of the struct page* status variables (file, frame, sector).
 bool page_in_core(struct page* page){
+    // If this is a new page, allocate and zero it.
     if(page->file == NULL && page->sector == 0 && page->frame == NULL){
         page->frame = get_free_frame(page);
         return true;
         }
+    // Otherwise, this page should be read in from file.
     else if(page->file != NULL){
+            // Allocate a page for the file to be read into.
             page->frame = get_free_frame(page);
+            // If this succeeded, get the file system lock, and read the file into the frame.
             if(page->frame != NULL){
                 lock_acquire(&file_lock);
                 file_seek(page->file,page->file_offset);
                 file_read(page->file,page->frame->base,page->file_bytes);
+                // Zero the bytes that we don't use.
                 memset(page->frame->base + page->file_bytes, 0, PGSIZE - page->file_bytes);
                 lock_release(&file_lock);
+                // This operation succeeded.
                 return true;
 
             }
         }
+        // This operation failed.
         return false;
 }
+// Lock the page, if it has a frame.
 void lock_page(struct page* page){
     if(page->frame != NULL){
         lock_acquire(&page->frame->f_lock);
     }
 }
+// Unlock the page, if we are the owner of the lock.
 void unlock_page(struct page* page){
     if(page->frame != NULL && lock_held_by_current_thread(&page->frame->f_lock)){
         lock_release(&page->frame->f_lock);
@@ -103,6 +116,8 @@ bool is_stack_access(void* addr, void* esp){
     return diff < PGSIZE;
     }
 }
+// Returns true if this page is an allocated (in the process page table) page (regardless of whether it has been
+// paged in or not).
 bool in_allocated_page(void* addr){
     struct thread* t = thread_current();
     // Temporary page structure.

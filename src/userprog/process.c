@@ -443,9 +443,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
+  // Clean up after loading. Release the file system lock.
   free(exec_name);
   lock_release(&file_lock);
-  //file_close (file);
   return success;
 }
 
@@ -528,11 +528,14 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
          and zero the final PAGE_ZERO_BYTES bytes. */
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
-
+      // Allocate a page at this virtual address.
       struct page* p = page_allocate(upage,writable);
 
+      // Set the file pointer.
       p->file = file;
+      // The offset is the original "ofs" + the number of bytes that were read previously.
       p->file_offset = total_read_bytes;
+      // Number of bytes to read this page.
       p->file_bytes = page_read_bytes;
 
       /* Advance. */
