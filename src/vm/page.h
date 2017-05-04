@@ -35,7 +35,7 @@ unsigned page_hash(const struct hash_elem *e, void* aux);
 bool page_less(const struct hash_elem *a, const struct hash_elem *b, void* aux);
 
 // Function to get (and possibly allocate) a user page.
-struct page* page_allocate(void* addr);
+struct page* page_allocate(void* addr, bool writable);
 
 bool page_in(void* addr);
 
@@ -44,4 +44,8 @@ bool page_in_core(struct page* page);
 void lock_page(struct page* page);
 
 void unlock_page(struct page* page);
+
+bool is_stack_access(void* addr,void* esp);
+
+bool in_allocated_page(void* addr);
 #endif

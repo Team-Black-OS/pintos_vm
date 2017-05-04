@@ -2,7 +2,7 @@
 #define USERPROG_SYSCALL_H
 void syscall_init (void);
 void exit(int);
-
+extern struct lock file_lock;
 // Accepts an address, calls exit(-1) if the address is out of range
 void validate(void* addr);
 

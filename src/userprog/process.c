@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-
+#include "syscall.h"
 static thread_func start_process NO_RETURN;
 
 // Cap stack growth at 64 pages.
@@ -100,8 +100,9 @@ start_process (void *in_data)
   // Add the structure to the parent thread's list.
   //list_push_front(&data->parent->children,&share->child_elem);
   // Thread current 
-  thread_current()->parent_share = share;
-
+  struct thread* t = thread_current();
+  t->parent_share = share;
+  t->user_esp = PHYS_BASE;
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -326,7 +327,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-
+  lock_acquire(&file_lock);
   // New char* for first arg in file_name (The executable name).
   char *exec_name = malloc(strlen(file_name)+1);
   char* dummy_arg;
@@ -442,8 +443,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
+  // Clean up after loading. Release the file system lock.
   free(exec_name);
-  //file_close (file);
+  lock_release(&file_lock);
   return success;
 }
 
@@ -526,33 +528,16 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
          and zero the final PAGE_ZERO_BYTES bytes. */
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
+      // Allocate a page at this virtual address.
+      struct page* p = page_allocate(upage,writable);
 
-      /* Get a page of memory. */
-      //uint8_t *kpage = palloc_get_page (PAL_USER);
-
-      struct page* p = page_allocate(upage);
-
+      // Set the file pointer.
       p->file = file;
+      // The offset is the original "ofs" + the number of bytes that were read previously.
       p->file_offset = total_read_bytes;
+      // Number of bytes to read this page.
       p->file_bytes = page_read_bytes;
-     /* if (p == NULL)
-        return false;
-*/
-      /* Load this page. */
-     /* if (file_read (file, upage, page_read_bytes) != (int) page_read_bytes)
-        {
-          //palloc_free_page (kpage);
-          return false; 
-        }
-      memset (upage + page_read_bytes, 0, page_zero_bytes);
-*/
-      /* Add the page to the process's address space. */
-     /* if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-*/
+
       /* Advance. */
       total_read_bytes += PGSIZE;
       read_bytes -= page_read_bytes;
@@ -575,12 +560,12 @@ setup_stack (void **esp, char* in_args)
   //kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 
   // Allocate the first stack page.
-  struct page* p = page_allocate(first_stack_page);
+  struct page* p = page_allocate(first_stack_page,true);
 
   // Allocate the rest of the stack pages (The other 64)
-  for(int i = 0; i < STACK_MAX_PAGES; ++i){
-    page_allocate(first_stack_page - (PGSIZE * i));
-  }
+ // for(int i = 0; i < STACK_MAX_PAGES; ++i){
+ //   page_allocate(first_stack_page - (PGSIZE * i),true);
+ // }
   if (p != NULL) 
     {
       //success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);

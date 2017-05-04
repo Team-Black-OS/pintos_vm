@@ -14,8 +14,8 @@
 #include <string.h>
 #include "devices/shutdown.h"
 
+struct lock file_lock;
 static void syscall_handler (struct intr_frame *);
-static struct lock file_lock;
 void
 syscall_init (void) 
 {
@@ -107,11 +107,17 @@ syscall_handler (struct intr_frame *f)
     case SYS_READ: {
       // Retrieve arguments and validate.
       int* fd = (int*) ((char*)f->esp +4);
-      char** raw = (char**) ((char*)f->esp+8);
-      unsigned* size = (unsigned*) ((char*)f->esp + 12);
       validate(fd);
-      validate(raw);
+
+      unsigned* size = (unsigned*) ((char*)f->esp + 12);
       validate(size);
+
+      char** raw = (char**) ((char*)f->esp+8);
+      validate(raw);
+      //validate(*raw);
+
+
+
       for(unsigned int i = 0; i < *size; ++i){
       validate(*raw+i);
       }
@@ -130,7 +136,7 @@ syscall_handler (struct intr_frame *f)
 
       char** raw = (char**) ((char*)f->esp+8);
       validate(raw);
-      validate(*raw);
+      //validate(*raw);
       for(unsigned int i = 0; i < *size; ++i){
         validate(*raw + i);
       }
@@ -284,6 +290,10 @@ int s_read(int fd, char* buf, unsigned size){
 int s_write(int fd, char* buf, unsigned size){
       // Get the file operation lock.
       lock_acquire(&file_lock);
+
+      unsigned num_of_pages = (PGSIZE + size - 1)/PGSIZE;
+      char* newbuf = palloc_get_multiple(002,num_of_pages);
+      memcpy(newbuf,buf,size);
       // Initialize return value to 0.
       int retval = 0;
       // If this is a console write, call putbuf().
@@ -302,7 +312,7 @@ int s_write(int fd, char* buf, unsigned size){
             struct file_map* fmp = list_entry (e, struct file_map, file_elem);
             if(fmp->fd == fd){
               // Write to the file if found.
-              retval = file_write(fmp->file,buf,size);
+              retval = file_write(fmp->file,newbuf,size);
               break;
             }
           }
@@ -391,8 +401,12 @@ int s_remove(char* name){
 
 void validate(void* addr){
   for(int i = 0; i < 4; ++i){
-    if(addr+i == NULL || !is_user_vaddr(addr+i) || pagedir_get_page(thread_current()->pagedir,addr+i) == NULL){
+    if(addr+i == NULL || !is_user_vaddr(addr+i)){
       exit(-1);
+    }else if(pagedir_get_page(thread_current()->pagedir,addr+i) == NULL){
+      if(!page_in(addr+i)){
+        exit(-1);
+      }
     }
   }
 }
