@@ -290,6 +290,10 @@ int s_read(int fd, char* buf, unsigned size){
 int s_write(int fd, char* buf, unsigned size){
       // Get the file operation lock.
       lock_acquire(&file_lock);
+
+      unsigned num_of_pages = (PGSIZE + size - 1)/PGSIZE;
+      char* newbuf = palloc_get_multiple(002,num_of_pages);
+      memcpy(newbuf,buf,size);
       // Initialize return value to 0.
       int retval = 0;
       // If this is a console write, call putbuf().
@@ -308,7 +312,7 @@ int s_write(int fd, char* buf, unsigned size){
             struct file_map* fmp = list_entry (e, struct file_map, file_elem);
             if(fmp->fd == fd){
               // Write to the file if found.
-              retval = file_write(fmp->file,buf,size);
+              retval = file_write(fmp->file,newbuf,size);
               break;
             }
           }
